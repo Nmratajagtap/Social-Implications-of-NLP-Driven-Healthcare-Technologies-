@@ -1,0 +1,63 @@
+import streamlit as st
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score
+
+st.set_page_config(page_title="Customer Churn Analysis", layout="wide")
+
+# Title
+st.title("📊 Customer Churn Analysis App")
+
+# Upload data
+uploaded_file = st.file_uploader("Upload Excel Dataset", type=["xlsx"])
+
+if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+
+    st.subheader("1. Dataset Preview")
+    st.dataframe(df.head())
+
+    st.subheader("2. Basic Info")
+    st.write("Shape of dataset:", df.shape)
+    st.write("Churn Value Counts:")
+    st.write(df['Churn'].value_counts())
+
+    st.subheader("3. Visualizations")
+
+    # Plot churn distribution
+    fig, ax = plt.subplots()
+    sns.countplot(data=df, x='Churn', ax=ax)
+    st.pyplot(fig)
+
+    # Gender vs Churn
+    fig2, ax2 = plt.subplots()
+    sns.countplot(data=df, x='Gender', hue='Churn', ax=ax2)
+    st.pyplot(fig2)
+
+    st.subheader("4. Model Training & Prediction")
+
+    # Drop ID
+    df = df.drop('CustomerID', axis=1)
+
+    # Label Encoding
+    df_encoded = df.copy()
+    for col in df_encoded.select_dtypes(include='object'):
+        df_encoded[col] = LabelEncoder().fit_transform(df_encoded[col])
+
+    # Train-test split
+    X = df_encoded.drop('Churn', axis=1)
+    y = df_encoded['Churn']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Random Forest Model
+    model = RandomForestClassifier()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    st.write("Accuracy:", accuracy_score(y_test, y_pred))
+    st.text("Classification Report:")
+    st.text(classification_report(y_test, y_pred))
